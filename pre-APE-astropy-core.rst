@@ -1,5 +1,5 @@
-Astropy as a pure Python package
-================================
+Re-packaging Astropy as a pure Python library
+=============================================
 
 author: Clément Robert, Thomas Robitaille
 
@@ -105,6 +105,18 @@ packages, which would be useful to further refine the granulosity of (partial)
 distributions. In the following, we provide an overview of how this secondary
 goal could be achieved.
 
+workspaces
+^^^^^^^^^^
+
+Modern Python packaging tools, such as ``uv`` and ``pixi``, allow for multiple
+packages to be developed seamlessly within a single repository, forming a workspace.
+Importantly, this notion does not, at the time of writing, abide to a standard,
+which means that opting for this structure currently incurs a cost in flexibility;
+workspaces are still a tool-specific notion, so migration from one tool to another
+isn't guaranteed to be possible. However, standardisation is alread being discussed
+<CITATION NEEDED>
+
+
 example repository layout
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -140,7 +152,15 @@ distributions.
 Backward compatibility
 ======================
 
-This section describes the ways in which the APE breaks backward compatibility.
+The proposed implementation doesn't create backward incompatibilities in that it
+only affect packaging of private APIs. However, the authors recognize that not
+all affected APIs may already be clearly marked as private (see APE ...), which
+might result in breaking changes for any existing cusumer code relying on
+private imports. In order to mitigate this issue, we recommend diligently
+re-exporting any such APIs in the backward-compatible location within the
+``astropy`` package and, crucially, to wrap the re-exports so deprecation
+warnings are emitted at import time. This can be achieved with PEP 562 module
+level ``__getattr__`` functions.
 
 Alternatives
 ============
