@@ -116,6 +116,10 @@ workspaces are still a tool-specific notion, so migration from one tool to anoth
 isn't guaranteed to be possible. However, standardisation is alread being discussed
 <CITATION NEEDED>
 
+This repository structure allows to seamlessly work on multiple packages while
+enforcing a strong form of separation of concerns and low coupling between
+subpackages.
+
 
 example repository layout
 ^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -124,29 +128,68 @@ example repository layout
 
   .
   ├── .github
-  │   └── workflows # common CI infrastructure
+  │   └── workflows
+  │       └── ... # shared CI infrastructure
   ├── packages
   │   ├── astropy_core.units
   │   │   ├── pyproject.toml
-  │   │   ├── README.md
   │   │   └── src
   │   │       └── astropy_core_units
   │   │           ├── __init__.py
   │   │           └── ...
   │   └── astropy_core.wcs
   │       ├── pyproject.toml
-  │       ├── README.md
   │       └── src
   │           └── astropy_core_wcs
   │               ├── __init__.py
   │               └── ...
   └── pyproject.toml # root project
 
-The root ``pyproject.toml`` doesn't define a package, but provides overarching
-structure and shared tool configuration, crucially, including workspace
+The root ``pyproject.toml`` does not define a package. Instead, it provides
+overarching structure and shared tool configurationq, including workspace
 definition. CI and release infrastructure can be shared using local, reusable
-GitHub Actions workflows, allowing for targetted test runs and partial
-distributions.
+GitHub Actions workflows, allowing for both targetted test jobs as well as
+partial publications (where one or more packages can be published
+independently).
+
+<Q to TR: does this part need to be illustrated in the POC repo ?>
+
+
+a PEP 420 namespace package
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Should we agree to publish subpackages separately, it might still be convenient
+for regular development in the main ``astropy`` library to still *treat* core
+packages as a unified namespace.
+
+This is feasible thanks to `PEP 420 <https://peps.python.org/pep-0420/>`__
+(accepted) allows use to use, for instance ``astropy_core`` as a namespace for
+publishing other subpackages under, e.g., ``astropy_core.units``,
+``astropy_core.wcs`` ...
+
+.. note:: Security concerns
+  
+  At the time of writing, there is no way for the astropy
+  organization to *reserve* a namespace on PyPI, meaning the namespace would
+  theoritically be subject to typo-squating attacks. However 
+  Also see `PEP 755 <https://peps.python.org/pep-0755/>`__
+
+
+Additional benefits
+===================
+
+In addition to solving all aforementioned quality-of life issues, the proposed
+separation between the main ``astropy`` package and its underlying extension
+modules would create an opportunity to experiment with modern build backend
+(included, but not restricted to meson-python or maturin), with little to no
+maintainance overhead for the main package itself. Essentially, this creates a
+greenfield for interested parties to revamp exisiting extensions, or experiment
+with new ones, away from the very active main package.
+
+It would also provide an avenue for distributors to create partial distributions
+for astropy as they see fit, meaning we could start introducing new subpackages
+with lower levels of support for exotic platform, without preventing
+distributors from packaging *working* software.
 
 
 Backward compatibility
@@ -154,7 +197,7 @@ Backward compatibility
 
 The proposed implementation doesn't create backward incompatibilities in that it
 only affect packaging of private APIs. However, the authors recognize that not
-all affected APIs may already be clearly marked as private (see APE ...), which
+all affected APIs may already be clearly marked as private (see APE 22), which
 might result in breaking changes for any existing cusumer code relying on
 private imports. In order to mitigate this issue, we recommend diligently
 re-exporting any such APIs in the backward-compatible location within the
