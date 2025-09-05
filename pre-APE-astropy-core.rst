@@ -200,10 +200,11 @@ for partial upgrades. For instance, say some version of ``astropy`` depends on
   ]
 
 It would then be possible for users to upgrade ``astropy_core.table`` to a newer
-bugfix version without requiring a fresh ``astropy`` release, while still
-preventing any breaking changes in ``astropy_core.table`` does not unexpectedly
-percolate into existing astropy versions. This of course requires that
-``astropy_core`` member packages adopt a clear semantic versionning policy.
+version, fixing bugs and security issues, without requiring a fresh ``astropy``
+release, while still preventing any breaking changes in ``astropy_core.table``
+does not unexpectedly percolate into existing astropy versions. This of course
+requires that ``astropy_core`` member packages adopt a clear semantic
+versionning policy.
 
 
 Additional benefits
