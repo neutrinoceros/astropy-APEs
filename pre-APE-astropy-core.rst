@@ -131,10 +131,10 @@ example repository layout
   │   └── workflows
   │       └── ... # shared CI infrastructure
   ├── packages
-  │   ├── astropy_core.units
+  │   ├── astropy_core.table
   │   │   ├── pyproject.toml
   │   │   └── src
-  │   │       └── astropy_core_units
+  │   │       └── astropy_core_table
   │   │           ├── __init__.py
   │   │           └── ...
   │   └── astropy_core.wcs
@@ -164,7 +164,7 @@ packages as a unified namespace.
 
 This is feasible thanks to `PEP 420 <https://peps.python.org/pep-0420/>`__
 (accepted) allows use to use, for instance ``astropy_core`` as a namespace for
-publishing other subpackages under, e.g., ``astropy_core.units``,
+publishing other subpackages under, e.g., ``astropy_core.table``,
 ``astropy_core.wcs`` ...
 
 .. note:: Security concerns
@@ -173,6 +173,37 @@ publishing other subpackages under, e.g., ``astropy_core.units``,
   organization to *reserve* a namespace on PyPI, meaning the namespace would
   theoritically be subject to typo-squating attacks. However 
   Also see `PEP 755 <https://peps.python.org/pep-0755/>`__
+
+
+Runtime dependency management
+-----------------------------
+
+``astropy_core`` members are expected to have little to no runtime dependencies,
+other than the standard library, NumPy, and, possibly, each other. ``astropy``
+itself could pin every ``astropy_core`` members to an exact version, which would
+result in a similar user experience we see today: in order to upgrade *any*
+extension code from astropy, users would need to upgrade astropy itself.
+However, the cost of *making* an astropy release, albeit only for the sake of
+upgrading selected dependencies, would be far less than today.
+
+Another possible strategy is to pin ``astropy_core`` members *loosely*, allowing
+for partial upgrades. For instance, say some version of ``astropy`` depends on
+``astropy_core.table``, specified as
+
+.. code-block:: toml
+
+  [project]
+  # ...
+  dependencies =  [
+    "astropy_core.table >=0.1.1, <0.2.0",
+    # ...
+  ]
+
+It would then be possible for users to upgrade ``astropy_core.table`` to a newer
+bugfix version without requiring a fresh ``astropy`` release, while still
+preventing any breaking changes in ``astropy_core.table`` does not unexpectedly
+percolate into existing astropy versions. This of course requires that
+``astropy_core`` member packages adopt a clear semantic versionning policy.
 
 
 Additional benefits
