@@ -207,6 +207,36 @@ requires that ``astropy_core`` member packages adopt a clear semantic
 versionning policy.
 
 
+Public library Development
+--------------------------
+
+A cost of the proposed split is that, in the rare event that important or
+potentially backward-incompatible changes need be developed in the core
+package(s), developing astropy with development versions of extension modules
+seemingly becomes less trivial: if they do not exist as part of the same
+package, then error-prone environment tinkering might seem unavoidable.
+Fortunately this isn't so: ``uv`` supports custom packages sources, which might
+point to a local directory or a GitHub repository, through the
+``[tool.uv.source]``` table in ``pyproject.toml``. For instance, say you're
+developing a patch for ``astropy_core.table``` locally add need to check
+``astropy``'s test suite's response. You can then add
+
+.. code-block::
+
+  [tool.uv.sources]
+  astropy_core_table = { path = '../astropy_core/packages/table', editable = true }
+
+to ``astropy``'s ``pyproject.toml`` and run the test suite either with ``uv``,
+or ``tox`` (which is uv-aware). Note that you can obtain the same patch by
+running ``uv add ../astropy_core --editable`` from the command line. This allows
+interested developers to simulate our current development workflow locally when
+needed.
+
+One can also temporarily set some package's source to be a GitHub repo:
+``uv add https://github.com/usr-name/astropy_core/``, which is useful to
+CI-proof a patch against the core package(s).
+
+
 Additional benefits
 ===================
 
