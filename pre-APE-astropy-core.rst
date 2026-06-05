@@ -1,7 +1,7 @@
 Re-packaging Astropy as a pure Python library
 =============================================
 
-author: Clément Robert, Thomas Robitaille
+author: Clément Robert, Thomas Robitaille, Reem Hamraz
 
 date-created: 2025 September 03
 
