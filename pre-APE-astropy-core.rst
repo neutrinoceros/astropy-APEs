@@ -29,7 +29,7 @@ into one or several core package(s) that ``astropy`` itself would depend on.
 Detailed description
 ====================
 
-The contents of the ``astropy`` package has historically be primarily pure
+The contents of the ``astropy`` package has historically been primarily pure
 Python. In particular, all user-exposed APIs are found in Python modules; any
 low level code included in ``astropy`` is regarded as an implementation detail
 and is not intended as user-facing. In practice, only a fraction of the entire
@@ -40,17 +40,18 @@ contributors:
 
 * complex build systems are required to build extension modules
 * all extensions, albeit essentially invariant, must be compiled over and over
-  again in all CI jobs, essentially wasting CPU as well as developer time, when
+  in all CI jobs, essentially wasting CPU as well as developer time, when
   running the actual test suite takes a comparable amount of time.
   The same is true for any developer running the test suite locally.
 * releasing astropy requires complex infrastructure and non-neglible storage,
-  creating an incentive for cutting bugfix releases *infrequently*
+  creating an incentive for cutting bugfix releases *infrequently*.
 
 Costs are also incurred on the user side:
 
 * release artifacts are much larger than they need to be, for the majority of
   times that users upgrade astropy but extension modules didn't change at all in
-  between releases. This is a problem in resource-constrained environments.
+  between releases. This is a problem in resource-constrained environments
+  (bandwidth and storage, mostly).
 * as hinted to earlier, bugfix releases may be delayed, pushing more users to
   install from source, manually patching their installations, or working around
   bugs with known solutions in hardly maintainable, expeditive ways.
@@ -85,39 +86,27 @@ The implementation can be performed in 4 consecutive stages:
    packages. See :ref:`monorepo-layout` for details.
 3. publish new package(s) to our usual, community controled distribution outlets
    (PyPI and conda-forge)
-4. in a single PR to ``astropy``, add new package(s) as dependency(ies), remove
+4. in a single PR to ``astropy``, add the new package(s) as dependency(ies), remove
    duplicate extension code and associated test code, drastically simplify build
    system. <TODO: link POC PR ?>
 
 As laid out, the whole process is relatively straightforward. However, we
 anticipate that many extension modules may not be directly covered by astropy's
 test suite, but instead rely on high level API tests, which we won't be able to
-simply relocate. Thus, stage 2 will be the most time consuming, requiring a 
-dedicated validation strategy to ensure all relocated modules are stable in isolation.
+simply relocate. Thus, we anticipate stage 2 to be the most time consuming,
+because we'll need to ensure all relocated modules are still thoroughly tested,
+likely requiring *new* and lower level tests be added to achieve this goal.
 
-Achieving this requires establishing a low-level testing layer that entirely bypasses 
-the high-level Python API (e.g., ``astropy.table.Column``). The validation strategy involves:
-
-* **Direct C-Slot Testing:** Utilizing minimal shim classes and ``.view()`` casting 
-  to map directly onto raw NumPy arrays. This ensures the C-level routing 
-  (such as ``tp_as_mapping->mp_subscript``) is exercised in pure isolation without 
-  triggering fallback sequence slots.
-* **Strict Memory & Type Validation:** Executing direct C-engine tests (e.g., within 
-  ``_np_utils.pyx``) to verify memory allocation, index mapping, and boolean masking 
-  without requiring bulky ``Table`` object instantiation.
-* **Breaking Dependency Cycles:** Refactoring C-extensions that possess runtime 
-  dependencies on high-level Python objects (e.g., ``astropy.units.UnitBase`` within 
-  ``unit_list_proxy.c``) to allow for compilation and validation in a vacuum.
 
 .. _monorepo-layout:
 
-Single repository, multiple packages
-------------------------------------
+Single repository, multiple packages (optional)
+-----------------------------------------------
 
 While the authors recommend that, in order to avoid infrastructure fragmentation
 and duplications, all moved code be hosted in a single new repository, we also
 want to highlight that this goal doesn't preclude the new code be re-organized
-as *multiple* smaller packages, which would be useful to further refine the
+as *multiple* smaller packages, which could be useful to further refine the
 granulosity of (partial) distributions. In the following, we provide an overview
 of how this secondary goal could be achieved.
 
@@ -127,7 +116,7 @@ workspaces
 Modern Python packaging tools, such as ``uv`` and ``pixi``, allow for multiple
 packages to be developed seamlessly within a single repository, forming a
 *workspace*. Importantly, this notion does not, at the time of writing,
-correspond to a standard definition, which means that opting for this structure
+have a standard definition, which means that opting into this structure
 currently incurs a cost in flexibility; workspaces are still a tool-specific
 notion, so migration from one tool to another isn't necessarily supported or
 trivial.
@@ -236,7 +225,7 @@ seemingly becomes less trivial: if they do not exist as part of the same
 package, then error-prone environment tinkering might seem unavoidable.
 Fortunately this isn't so: ``uv`` supports custom packages sources, which might
 point to a local directory or a GitHub repository, through the
-``[tool.uv.source]``` table in ``pyproject.toml``. For instance, say you're
+``[tool.uv.source]`` table in ``pyproject.toml``. For instance, say you're
 developing a patch for ``astropy_core.table``` locally add need to check
 ``astropy``'s test suite's response. You can then add
 
@@ -246,7 +235,7 @@ developing a patch for ``astropy_core.table``` locally add need to check
   astropy_core_table = { path = '../astropy_core/packages/table', editable = true }
 
 to ``astropy``'s ``pyproject.toml`` and run the test suite either with ``uv``,
-or ``tox`` (which is uv-aware). Note that you can obtain the same patch by
+or ``tox`` (which is ``uv``-aware). Note that you can obtain the same patch by
 running ``uv add ../astropy_core --editable`` from the command line. This allows
 interested developers to simulate our current development workflow locally when
 needed.
@@ -262,10 +251,10 @@ Additional benefits
 In addition to solving all aforementioned quality-of life issues, the proposed
 separation between the main ``astropy`` package and its underlying extension
 modules would create an opportunity to experiment with modern build backend
-(included, but not restricted to meson-python or maturin), with little to no
-maintainance overhead for the main package itself. Essentially, this creates a
-greenfield for interested parties to revamp exisiting extensions, or experiment
-with new ones, away from the very active main package.
+(included, but not restricted to ``meson-python`` or ``scikit-build-core``),
+with little to no maintainance overhead for the main package itself.
+Essentially, this creates a greenfield for interested parties to revamp exisiting
+extensions, or experiment with new ones, away from the very active main package.
 
 It would also provide an avenue for distributors to create partial distributions
 for astropy as they see fit, meaning we could start introducing new subpackages
@@ -279,7 +268,7 @@ Backward compatibility
 The proposed implementation doesn't create backward incompatibilities in that it
 only affects packaging of private APIs. However, the authors recognize that not
 all affected APIs may already be clearly marked as private (see APE 22), which
-might result in breaking changes for any existing cusumer code relying on
+might result in breaking changes for any existing consumer code relying on
 private imports. In order to mitigate this issue, we recommend diligently
 re-exporting any such APIs in the backward-compatible location within the
 ``astropy`` package and, crucially, to wrap the re-exports so deprecation
