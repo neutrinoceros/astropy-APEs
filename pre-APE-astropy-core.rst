@@ -93,10 +93,22 @@ The implementation can be performed in 4 consecutive stages:
 As laid out, the whole process is relatively straightforward. However, we
 anticipate that many extension modules may not be directly covered by astropy's
 test suite, but instead rely on high level API tests, which we won't be able to
-simply relocate. Thus, we anticipate stage 2 to be the most time consuming,
-because we'll need to ensure all relocated modules are still thoroughly tested,
-likely requiring *new* and lower level tests be added to achieve this goal.
+simply relocate. Thus, stage 2 will be the most time consuming, requiring a 
+dedicated validation strategy to ensure all relocated modules are stable in isolation.
 
+Achieving this requires establishing a low-level testing layer that entirely bypasses 
+the high-level Python API (e.g., ``astropy.table.Column``). The validation strategy involves:
+
+* **Direct C-Slot Testing:** Utilizing minimal shim classes and ``.view()`` casting 
+  to map directly onto raw NumPy arrays. This ensures the C-level routing 
+  (such as ``tp_as_mapping->mp_subscript``) is exercised in pure isolation without 
+  triggering fallback sequence slots.
+* **Strict Memory & Type Validation:** Executing direct C-engine tests (e.g., within 
+  ``_np_utils.pyx``) to verify memory allocation, index mapping, and boolean masking 
+  without requiring bulky ``Table`` object instantiation.
+* **Breaking Dependency Cycles:** Refactoring C-extensions that possess runtime 
+  dependencies on high-level Python objects (e.g., ``astropy.units.UnitBase`` within 
+  ``unit_list_proxy.c``) to allow for compilation and validation in a vacuum.
 
 .. _monorepo-layout:
 
